@@ -5,6 +5,7 @@ from nnfs.datasets import spiral_data
 nnfs.init()
 
 
+
 class Layer_Dense:
     def __init__(self, n_inputs, n_neurons):
         # n_inputs = number of inputs in a batch
@@ -27,6 +28,31 @@ class Activation_Softmax:
         probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True)
         self.output = probabilities
 
+
+class Loss:
+    def calculate(self, output, y): #output is model output, y- intendet target values
+        sample_losses = self.forward(output, y)
+        data_loss = np.mean(sample_losses)
+        return data_loss
+    
+
+class Loss_CategoricalCrossEntropy(Loss):
+    def forward(self,y_prediction, y_true): #y_pred values from neural network, y_true target trening values
+        samples = len(y_prediction)
+        #clip to prevent loss going to inf while confidence is 0 -> limits the range of values
+        y_prediction_clipped = np.clip(y_prediction, 1e-7, 1-1e-7)
+
+        if len(y_true.shape) == 1: #someone inputed scalar not one-hot encoded
+            correct_confidences = y_prediction_clipped[range(samples), y_true]
+        
+        elif len(y_true.shape)==2:
+            correct_confidences = np.sum(y_prediction_clipped*y_true, axis=1)
+
+        negative_log_probability = -np.log(correct_confidences)
+        return negative_log_probability
+
+
+
 X , y = spiral_data(samples=100, classes=3)
 
 dense1 = Layer_Dense(2, 3) # inputs is x,y coordinates of poin on axis
@@ -42,6 +68,17 @@ dense2.forward(activation1.output)
 activation2.forward(dense2.output)
 
 print(activation2.output[:5])
+
+loss_function = Loss_CategoricalCrossEntropy()
+loss = loss_function.calculate(activation2.output, y)
+
+prediction = np.argmax(activation2.output, axis=1)
+if y.shape == 2:
+    y = np.argmax(y, axis=1)
+accuracy = np.mean(prediction == y)    
+
+print(f"Loss {loss}")
+print(accuracy)
 
 
 
