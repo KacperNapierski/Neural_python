@@ -14,13 +14,21 @@ class Layer_Dense:
         self.weights = 0.1* np.random.randn(n_inputs, n_neurons) #0.1 to have values below 1
         self.biases = np.zeros((1, n_neurons)) # the tuple is the shape -> generates 1xNEURONS vector
     def forward(self, inputs):
+        self.inputs = inputs
         self.output = np.dot(inputs, self.weights) + self.biases
+    def backward(self,dvalues):
+        self.dweight = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues,axis=0, keepdims= True)
+        self.dinputs = np.dot(dvalues, self.weights.T)
 
 
 class Activation_ReLU:
     def forward(self, inputs):
+        self.inputs = inputs
         self.output = np.maximum(0,inputs)
-
+    def backwards(self, dvalues):
+        self.dinputs = dvalues.copy()
+        self.dinputs[self.inputs <= 0] = 0
 
 class Activation_Softmax:
     def forward(self, inputs):
@@ -62,7 +70,9 @@ dense2 = Layer_Dense(3, 3) # output is 3 as we have 3 classes only
 activation2 = Activation_Softmax()
 
 dense1.forward(X)
+print(dense1.output)
 activation1.forward(dense1.output)
+print(activation1.forward(dense1.output))
 
 dense2.forward(activation1.output)
 activation2.forward(dense2.output)
