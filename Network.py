@@ -72,7 +72,7 @@ class Loss_CategoricalCrossEntropy(Loss):
 
 
 class Activation_Softmax_Loss_CategoricalCrossEntropy():
-    def __init__(self) -> None:
+    def __init__(self):
         self.activation = Activation_Softmax()
         self.loss = Loss_CategoricalCrossEntropy()
     def forward(self, inputs, y_true):
@@ -84,54 +84,38 @@ class Activation_Softmax_Loss_CategoricalCrossEntropy():
         if len(y_true.shape) == 2:
             y_true = np.argmax(y_true, axis=1)
         self.dinputs = dvalues.copy()
-        self.dinputs[range(samples)] -= 1
+        self.dinputs[range(samples),y_true] -= 1 # -1 drom index in y_true from each row in range ramples
         self.dinputs = self.dinputs / samples
 
-#X , y = spiral_data(samples=100, classes=3)
-#
-#dense1 = Layer_Dense(2, 3) # inputs is x,y coordinates of poin on axis
-#activation1 = Activation_ReLU()
-#
-#dense2 = Layer_Dense(3, 3) # output is 3 as we have 3 classes only
-#activation2 = Activation_Softmax()
-#
-#dense1.forward(X)
-#print(dense1.output)
-#activation1.forward(dense1.output)
-#print(activation1.forward(dense1.output))
-#
-#dense2.forward(activation1.output)
-#activation2.forward(dense2.output)
-#
-#print(activation2.output[:5])
-#
-#loss_function = Loss_CategoricalCrossEntropy()
-#loss = loss_function.calculate(activation2.output, y)
-#
-#prediction = np.argmax(activation2.output, axis=1)
-#if y.shape == 2:
-#    y = np.argmax(y, axis=1)
-#accuracy = np.mean(prediction == y)    
-#
-#print(f"Loss {loss}")
-#print(accuracy)
 
-softmax_output = np.array([[0.7, 0.1, 0.2],
-                           [0.1, 0.5, 0.4],
-                           [0.02, 0.9, 0.08]])
 
-class_target = np.array([0, 1, 1])
-softmax_loss = Activation_Softmax_Loss_CategoricalCrossEntropy()
-softmax_loss.backward(softmax_output, class_target)
-dvalues1 = softmax_loss.dinputs
-print("Gradients: loss + activation combination")
-print(dvalues1)
+X , y = spiral_data(samples=100, classes=3)
 
-activation = Activation_Softmax()
-activation.output = softmax_output
-loss = Loss_CategoricalCrossEntropy()
-loss.backward(softmax_output, class_target)
-activation.backward(loss.dinputs)
-dvalues2 = activation.dinputs
-print("Gradients: loss and activation separetly")
-print(dvalues2)
+dense1 = Layer_Dense(2, 3) # inputs is x,y coordinates of poin on axis
+activation1 = Activation_ReLU()
+dense2 = Layer_Dense(3, 3) # output is 3 as we have 3 classes only
+loss_activation = Activation_Softmax_Loss_CategoricalCrossEntropy()
+
+dense1.forward(X)
+activation1.forward(dense1.output)
+dense2.forward(activation1.output)
+loss = loss_activation.forward(dense2.output, y)
+
+prediction = np.argmax(loss_activation.output, axis=1)
+if y.shape == 2:
+    y = np.argmax(y, axis=1)
+accuracy = np.mean(prediction == y)    
+
+print(loss_activation.output[:5])
+print(f"Loss {loss}")
+print(f"Accuracy {accuracy}")
+
+loss_activation.backward(loss_activation.output,y)
+dense2.backward(loss_activation.dinputs)
+activation1.backwards(dense2.dinputs)
+dense1.backward(activation1.dinputs)
+
+print(dense1.dweight)
+print(dense1.dbiases)
+print(dense2.dweight)
+print(dense2.dbiases)
